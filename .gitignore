@@ -39,6 +39,9 @@ create_icon.py
 icon.ico
 icon.png
 
+# Security - DO NOT COMMIT
+security.py
+
 # Build artifacts
 *.exe
 *.dll

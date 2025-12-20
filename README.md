@@ -64,6 +64,11 @@ venv\Scripts\activate
 # Install dependencies
 pip install -r requirements.txt
 
+# Set up API key
+# Copy security.py.example to security.py and add your Pollinations API key
+copy security.py.example security.py
+# Edit security.py and replace YOUR_API_KEY_HERE with your actual key
+
 # Run the application
 python main.py
 ```
