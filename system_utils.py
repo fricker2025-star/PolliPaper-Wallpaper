@@ -6,6 +6,9 @@ from pathlib import Path
 from datetime import datetime
 import requests
 import json
+import psutil
+import time
+import random
 from typing import Optional, Tuple
 import config
 
@@ -70,9 +73,9 @@ class WallpaperManager:
                         "Wallpaper Access Required",
                         "PolliPaper needs access to change your wallpaper.\n\n"
                         "This might be blocked by:\n"
-                        "• Windows Group Policy\n"
-                        "• Corporate IT restrictions\n"
-                        "• Privacy settings\n\n"
+                        "- Windows Group Policy\n"
+                        "- Corporate IT restrictions\n"
+                        "- Privacy settings\n\n"
                         "Would you like to open Windows settings to check permissions?"
                     )
                     if response:
@@ -143,8 +146,6 @@ class LocationDetector:
         Returns:
             Dict with keys: city, region, country, lat, lon, timezone
         """
-        import time
-        
         # Check cache
         if (LocationDetector._cached_location and 
             LocationDetector._cache_time and 
@@ -253,23 +254,79 @@ class TimeDetector:
 class WeatherDetector:
     """Detects current weather conditions"""
     
+    _cached_weather = None
+    _cache_time = None
+    _cache_duration = 900  # Cache for 15 minutes
+    
     @staticmethod
-    def get_weather() -> Optional[str]:
+    def get_weather() -> Optional[dict]:
         """
-        Get current weather condition
+        Get current weather condition with caching
         
         Returns:
-            Weather description or None if failed
+            Weather data dict or None if failed
         """
+        # Check cache
+        if (WeatherDetector._cached_weather and 
+            WeatherDetector._cache_time and 
+            (time.time() - WeatherDetector._cache_time) < WeatherDetector._cache_duration):
+            print(f"[WEATHER] Using cached weather: {WeatherDetector._cached_weather.get('condition', 'Unknown')}")
+            return WeatherDetector._cached_weather
+            
         try:
+            # Method 1: Get detailed JSON from wttr.in
+            # Using 'auto' or detecting city from LocationDetector
+            location = LocationDetector.get_location()
+            city = location.get('city', 'auto') if location else 'auto'
+            
+            # format=j1 gives a nice JSON response
             response = requests.get(
-                config.WEATHER_API_URL,
-                timeout=5
+                f"https://wttr.in/{city}?format=j1",
+                timeout=10
             )
             response.raise_for_status()
-            return response.text.strip()
+            data = response.json()
+            
+            if 'current_condition' in data and data['current_condition']:
+                current = data['current_condition'][0]
+                
+                # More robust extraction
+                weather_desc = current.get('weatherDesc', [{}])
+                condition_val = weather_desc[0].get('value', '') if weather_desc else ''
+                
+                weather_info = {
+                    'condition': condition_val,
+                    'temp': current.get('temp_C', ''),
+                    'location': data.get('nearest_area', [{}])[0].get('areaName', [{}])[0].get('value', '') if data.get('nearest_area') else '',
+                    'raw': condition_val
+                }
+                
+                # Update cache
+                WeatherDetector._cached_weather = weather_info
+                WeatherDetector._cache_time = time.time()
+                return weather_info
+                
+            return None
         except Exception as e:
-            print(f"Error getting weather: {e}")
+            print(f"[WEATHER] Detailed fetch failed: {e}")
+            # Fallback to simple format
+            try:
+                response = requests.get(
+                    "https://wttr.in/?format=%C",
+                    timeout=5
+                )
+                if response.status_code == 200:
+                    condition = response.text.strip()
+                    weather_info = {
+                        'condition': condition,
+                        'raw': condition
+                    }
+                    # Update cache even for fallback
+                    WeatherDetector._cached_weather = weather_info
+                    WeatherDetector._cache_time = time.time()
+                    return weather_info
+            except:
+                pass
             return None
     
     @staticmethod
@@ -278,7 +335,7 @@ class WeatherDetector:
         Parse weather data to get condition type
         
         Args:
-            weather_data: Weather data dict from get_weather()
+            weather_data: Weather data dict
             
         Returns:
             One of: clear, cloudy, rain, snow, storm, fog
@@ -287,18 +344,19 @@ class WeatherDetector:
             print("[WEATHER] No weather data, defaulting to 'clear'")
             return "clear"
         
-        weather_text = weather_data.get('condition', '') + ' ' + weather_data.get('raw', '')
-        weather_lower = weather_text.lower()
+        condition_text = weather_data.get('condition', '').lower()
+        raw_text = weather_data.get('raw', '').lower()
+        weather_lower = f"{condition_text} {raw_text}"
         
         print(f"[WEATHER] Parsing: {weather_lower[:50]}")
         
-        if any(word in weather_lower for word in ["clear", "sunny"]):
+        if any(word in weather_lower for word in ["clear", "sunny", "fair"]):
             condition = "clear"
-        elif any(word in weather_lower for word in ["rain", "drizzle", "shower", "rainy"]):
+        elif any(word in weather_lower for word in ["rain", "drizzle", "shower", "rainy", "light rain"]):
             condition = "rain"
-        elif any(word in weather_lower for word in ["snow", "sleet", "snowy"]):
+        elif any(word in weather_lower for word in ["snow", "sleet", "snowy", "ice"]):
             condition = "snow"
-        elif any(word in weather_lower for word in ["storm", "thunder", "lightning"]):
+        elif any(word in weather_lower for word in ["storm", "thunder", "lightning", "thundery"]):
             condition = "storm"
         elif any(word in weather_lower for word in ["fog", "mist", "haze", "foggy"]):
             condition = "fog"
@@ -321,7 +379,8 @@ class WeatherDetector:
         if weather_data and weather_data.get('location'):
             location_name = weather_data['location']
             if location_name != 'auto' and not any(char.isdigit() for char in location_name):
-                print(f"[WEATHER] Adding location context: {location_name}")
+                print(f"[WEATHER] Found location: {location_name}")
+                # We could append location to prompt if we wanted, but the presets are usually better
         
         return prompt
 
@@ -420,7 +479,9 @@ class SettingsManager:
             "enhance_prompts": True,
             "custom_prompt": "",
             "auto_start": False,
-            "minimize_to_tray": True
+            "minimize_to_tray": True,
+            "api_key": "",
+            "model": "flux"
         }
     
     @staticmethod
@@ -433,3 +494,75 @@ class SettingsManager:
         except Exception as e:
             print(f"Error saving settings: {e}")
             return False
+
+class GameDetector:
+    """Detects currently running games and generates dynamic prompts"""
+    
+    # Common game process keywords to look for
+    GAME_KEYWORDS = [
+        "valorant", "leagueoflegends", "minecraft", "fortnite", "roblox", 
+        "csgo", "cs2", "cyberpunk2077", "overwatch", "apex", "genshin",
+        "starrail", "dota2", "pubg", "eldenring", "stardew", "terraria"
+    ]
+    
+    @staticmethod
+    def get_running_game() -> Optional[str]:
+        """
+        Detect if a game is currently running
+        
+        Returns:
+            Game name or None if no game detected
+        """
+        try:
+            for proc in psutil.process_iter(['name']):
+                try:
+                    name = proc.info['name'].lower()
+                    # Check for .exe or other common extensions
+                    clean_name = name.replace(".exe", "").replace("-", "").replace("_", "")
+                    
+                    for keyword in GameDetector.GAME_KEYWORDS:
+                        if keyword in clean_name:
+                            # Map back to a nice name
+                            mapping = {
+                                "leagueoflegends": "League of Legends",
+                                "csgo": "Counter-Strike: Global Offensive",
+                                "cs2": "Counter-Strike 2",
+                                "cyberpunk2077": "Cyberpunk 2077",
+                                "starrail": "Honkai: Star Rail",
+                                "apex": "Apex Legends",
+                                "pubg": "PUBG: BATTLEGROUNDS",
+                                "eldenring": "Elden Ring",
+                                "stardew": "Stardew Valley"
+                            }
+                            return mapping.get(keyword, keyword.capitalize())
+                except (psutil.NoSuchProcess, psutil.AccessDenied, psutil.ZombieProcess):
+                    continue
+            return None
+        except Exception as e:
+            print(f"[GAME] Detection error: {e}")
+            return None
+
+    @staticmethod
+    def get_game_prompt() -> str:
+        """
+        Detect running game and generate a dynamic prompt
+        """
+        game_name = GameDetector.get_running_game()
+        
+        if not game_name:
+            print("[GAME] No game detected, using default gaming prompt")
+            return "Professional gaming setup with vibrant RGB lighting, futuristic mechanical keyboard, dual monitor setup, cinematic atmosphere, 8k resolution, photorealistic"
+            
+        print(f"[GAME] Detected: {game_name}")
+        
+        # Dynamic prompt construction
+        base_prompt = f"Epic high-quality wallpaper inspired by the game {game_name}. "
+        style_elements = "Cinematic lighting, vibrant colors, iconic aesthetic, highly detailed environment, 8k resolution, masterpiece, digital art style."
+        
+        # Add some variety based on the game name for better results
+        if any(word in game_name.lower() for word in ["minecraft", "roblox", "stardew", "terraria"]):
+            style_elements = "Vibrant stylized art style, beautiful lighting, atmospheric world, sharp detail, 8k, digital painting."
+        elif any(word in game_name.lower() for word in ["cyberpunk", "valorant", "apex", "overwatch"]):
+            style_elements = "Futuristic sci-fi aesthetic, neon accents, sharp geometric lines, cinematic atmosphere, high-octane energy, 8k."
+            
+        return f"{base_prompt}{style_elements}"

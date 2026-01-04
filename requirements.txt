@@ -1,3 +1,4 @@
+pyinstaller>=6.5.0
 customtkinter==5.2.2
 Pillow==10.3.0
 requests==2.31.0
@@ -5,3 +6,4 @@ psutil==5.9.8
 pyaudio==0.2.14
 pystray==0.19.5
 pywin32==306
+resvg-py==0.2.4

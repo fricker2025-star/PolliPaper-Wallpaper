@@ -1,29 +1,30 @@
 """Revolutionary Mode Selector - Card-Based Visual Selection"""
 import customtkinter as ctk
 import config
+from assets import IconManager
 
 class VisualModeSelector(ctk.CTkFrame):
     """Never-before-seen card-based mode selector with categories"""
     
     # Mode categories with visual indicators
     MODE_CATEGORIES = {
-        "🎨 CREATIVE": {
-            "aesthetic": {"icon": "🌈", "color": "#ec4899", "desc": "Aesthetic Vibes"},
-            "abstract": {"icon": "🎨", "color": "#8b5cf6", "desc": "Abstract Art"},
-            "fantasy": {"icon": "🐉", "color": "#a855f7", "desc": "Fantasy Worlds"}
+        "CREATIVE": {
+            "aesthetic": {"icon": "aesthetic", "color": "#ec4899", "desc": "Aesthetic Vibes"},
+            "abstract": {"icon": "abstract", "color": "#8b5cf6", "desc": "Abstract Art"},
+            "fantasy": {"icon": "fantasy", "color": "#a855f7", "desc": "Fantasy Worlds"}
         },
-        "🌍 NATURAL": {
-            "time_based": {"icon": "🌅", "color": "#f59e0b", "desc": "Time of Day"},
-            "weather_based": {"icon": "⛅", "color": "#3b82f6", "desc": "Weather Reactive"},
-            "nature": {"icon": "🌲", "color": "#10b981", "desc": "Nature Focus"}
+        "NATURAL": {
+            "time_based": {"icon": "time_based", "color": "#f59e0b", "desc": "Time of Day"},
+            "weather_based": {"icon": "weather_based", "color": "#3b82f6", "desc": "Weather Reactive"},
+            "nature": {"icon": "nature", "color": "#10b981", "desc": "Nature Focus"}
         },
-        "🚀 FUTURISTIC": {
-            "space": {"icon": "🌌", "color": "#6366f1", "desc": "Space & Cosmos"},
-            "cyberpunk": {"icon": "⚡", "color": "#ec4899", "desc": "Cyberpunk"},
+        "FUTURISTIC": {
+            "space": {"icon": "space", "color": "#6366f1", "desc": "Space & Cosmos"},
+            "cyberpunk": {"icon": "cyberpunk", "color": "#ec4899", "desc": "Cyberpunk"},
         },
-        "🎵 DYNAMIC": {
-            "music_based": {"icon": "🎵", "color": "#f472b6", "desc": "Music Reactive"},
-            "manual": {"icon": "✏️", "color": "#94a3b8", "desc": "Manual Mode"}
+        "DYNAMIC": {
+            "music_based": {"icon": "music_based", "color": "#f472b6", "desc": "Music Reactive"},
+            "manual": {"icon": "manual", "color": "#94a3b8", "desc": "Manual Mode"}
         }
     }
     
@@ -41,10 +42,13 @@ class VisualModeSelector(ctk.CTkFrame):
         # Get current mode info
         mode_info = self.get_mode_info(self.current_mode)
         
-        # Create professional trigger button
+        # Create professional trigger button with mode icon
+        icon_img = IconManager.get_icon(mode_info['icon'], size=20, color="white")
         self.trigger = ctk.CTkButton(
             self,
-            text=f"{mode_info['icon']}  {mode_info['desc'].upper()}  ▼",
+            text=f"  {mode_info['desc'].upper()}",
+            image=icon_img,
+            compound="left",
             font=ctk.CTkFont(size=13, weight="bold"),
             height=45,
             fg_color=config.COLORS["bg_light"],
@@ -56,13 +60,16 @@ class VisualModeSelector(ctk.CTkFrame):
             command=self.toggle_popup
         )
         self.trigger.pack(fill="x")
+        
+        # Add a small chevron on the right if needed, but compound="left" already uses the image slot.
+        # The dropdown indicator is handled by the SVG icon in the trigger button.
     
     def get_mode_info(self, mode_key):
         """Get visual info for a mode"""
         for category, modes in self.MODE_CATEGORIES.items():
             if mode_key in modes:
                 return modes[mode_key]
-        return {"icon": "🎨", "color": "#8b5cf6", "desc": "Unknown"}
+        return {"icon": "palette", "color": "#8b5cf6", "desc": "Unknown"}
     
     def toggle_popup(self):
         """Show/hide the visual mode selector popup"""
@@ -99,12 +106,16 @@ class VisualModeSelector(ctk.CTkFrame):
         header.pack(fill="x", padx=2, pady=(2, 10))
         header.pack_propagate(False)
         
-        ctk.CTkLabel(
+        lightning_icon = IconManager.get_icon("lightning", size=18, color=config.COLORS["primary"])
+        header_title = ctk.CTkLabel(
             header,
-            text="⚡ SELECT GENERATION MODE",
+            text=" SELECT GENERATION MODE",
+            image=lightning_icon,
+            compound="left",
             font=ctk.CTkFont(size=13, weight="bold"),
             text_color=config.COLORS["text_primary"]
-        ).pack(pady=15)
+        )
+        header_title.pack(pady=15)
         
         # Scrollable content
         scroll = ctk.CTkScrollableFrame(
@@ -177,9 +188,12 @@ class VisualModeSelector(ctk.CTkFrame):
         left = ctk.CTkFrame(content, fg_color="transparent")
         left.pack(side="left", fill="x", expand=True)
         
+        mode_icon = IconManager.get_icon(mode_info['icon'], size=20, color=config.COLORS["primary"] if is_active else "white")
         ctk.CTkLabel(
             left,
-            text=f"{mode_info['icon']}  {mode_info['desc']}",
+            text=f"  {mode_info['desc']}",
+            image=mode_icon,
+            compound="left",
             font=ctk.CTkFont(size=13, weight="bold" if is_active else "normal"),
             text_color=config.COLORS["text_primary"],
             anchor="w"
@@ -187,11 +201,11 @@ class VisualModeSelector(ctk.CTkFrame):
         
         # Active indicator
         if is_active:
+            check_icon = IconManager.get_icon("check", size=16, color=config.COLORS["accent_gold"])
             ctk.CTkLabel(
                 content,
-                text="✓",
-                font=ctk.CTkFont(size=16, weight="bold"),
-                text_color=config.COLORS["accent_gold"]
+                text="",
+                image=check_icon
             ).pack(side="right")
         
         # Hover effect
@@ -222,8 +236,12 @@ class VisualModeSelector(ctk.CTkFrame):
         """Handle mode selection"""
         self.current_mode = mode_key
         
-        # Update trigger button
-        self.trigger.configure(text=f"{mode_info['icon']}  {mode_info['desc'].upper()}  ▼")
+        # Update trigger button with new icon and text
+        mode_icon = IconManager.get_icon(mode_info['icon'], size=20, color="white")
+        self.trigger.configure(
+            text=f"  {mode_info['desc'].upper()}",
+            image=mode_icon
+        )
         
         # Callback
         if self.callback:
@@ -246,4 +264,8 @@ class VisualModeSelector(ctk.CTkFrame):
         """Set mode programmatically"""
         mode_info = self.get_mode_info(mode_key)
         self.current_mode = mode_key
-        self.trigger.configure(text=f"{mode_info['icon']}  {mode_info['desc'].upper()}  ▼")
+        mode_icon = IconManager.get_icon(mode_info['icon'], size=20, color="white")
+        self.trigger.configure(
+            text=f"  {mode_info['desc'].upper()}",
+            image=mode_icon
+        )

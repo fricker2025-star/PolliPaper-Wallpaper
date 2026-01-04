@@ -1,8 +1,11 @@
 """Pollinations API Client"""
 
 import requests
+from requests.adapters import HTTPAdapter
+from urllib3.util.retry import Retry
 from typing import Optional
 import time
+import random
 from pathlib import Path
 import config
 
@@ -14,9 +17,41 @@ class PollinationsClient:
         self.base_url = config.POLLINATIONS_BASE_URL
         self.model = config.DEFAULT_MODEL
         self.session = requests.Session()
-        self.session.headers.update({
-            "Authorization": f"Bearer {self.api_key}"
-        })
+        
+        # Optimize session for performance and reliability
+        retry_strategy = Retry(
+            total=2,  # Fewer retries for speed
+            backoff_factor=0.5,
+            status_forcelist=[429, 500, 502, 503, 504],
+        )
+        adapter = HTTPAdapter(
+            pool_connections=10,
+            pool_maxsize=10,
+            max_retries=retry_strategy
+        )
+        self.session.mount("http://", adapter)
+        self.session.mount("https://", adapter)
+        
+        self.update_headers()
+    
+    def update_config(self, api_key: Optional[str] = None, model: Optional[str] = None):
+        """Update API client configuration"""
+        if api_key is not None:
+            self.api_key = api_key if api_key else config.POLLINATIONS_API_KEY
+            self.update_headers()
+        if model is not None:
+            self.model = model
+        print(f"[API] Config updated: model={self.model}, has_custom_key={bool(api_key)}")
+
+    def update_headers(self):
+        """Update session headers with current API key"""
+        if self.api_key and self.api_key.strip():
+            self.session.headers.update({
+                "Authorization": f"Bearer {self.api_key.strip()}"
+            })
+        else:
+            if "Authorization" in self.session.headers:
+                del self.session.headers["Authorization"]
     
     @staticmethod
     def add_prompt_variation(prompt: str) -> str:
@@ -29,8 +64,6 @@ class PollinationsClient:
         Returns:
             Prompt with variation
         """
-        import random
-        
         # Add variety descriptors
         variations = [
             "stunning", "breathtaking", "magnificent", "spectacular", "gorgeous",
@@ -82,8 +115,6 @@ class PollinationsClient:
             Image data as bytes, or None if failed
         """
         try:
-            import random
-            
             # Generate random seed if not provided (ensures unique images)
             if seed is None:
                 seed = random.randint(1, 1000000000)
@@ -102,9 +133,11 @@ class PollinationsClient:
                 "width": width,
                 "height": height,
                 "seed": seed,  # Always include seed for unique images
-                "enhance": str(enhance).lower(),
-                "nologo": "true",  # Remove watermark for cleaner wallpapers
-                "nofeed": "true"  # Don't add to public feed
+                "enhance": "true",  # Always enhance for High Quality as requested
+                "nologo": "true",   # Remove watermark for cleaner wallpapers
+                "private": "true",  # Private generation for higher quality/priority
+                "quality": "high",  # High quality as requested
+                "nofeed": "true"    # Don't add to public feed
             }
             print(f"[API] URL: {url}")
             print(f"[API] Params: {params}")
@@ -118,7 +151,7 @@ class PollinationsClient:
             
             # Make the request with timeout
             print(f"[API] Sending request...")
-            response = self.session.get(url, params=params, headers=headers, timeout=120)
+            response = self.session.get(url, params=params, headers=headers, timeout=60)
             
             print(f"[API] Response status: {response.status_code}")
             print(f"[API] Content-Type: {response.headers.get('content-type')}")
@@ -136,7 +169,7 @@ class PollinationsClient:
             return response.content
             
         except requests.exceptions.Timeout:
-            print(f"[API] ERROR: Request timed out after 120 seconds")
+            print(f"[API] ERROR: Request timed out after 60 seconds")
             return None
         except requests.exceptions.RequestException as e:
             print(f"[API] ERROR: {e}")

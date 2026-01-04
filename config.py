@@ -7,7 +7,21 @@ from security import get_api_key
 # API Configuration
 POLLINATIONS_API_KEY = get_api_key()  # Obfuscated for security
 POLLINATIONS_BASE_URL = "https://gen.pollinations.ai/image"
-DEFAULT_MODEL = "flux"  # Flux model - high quality AI images
+DEFAULT_MODEL = "flux"  # Flux model - High quality AI images
+
+# Available models for custom API key users
+POLLINATIONS_MODELS = [
+    "flux",
+    "flux-realism",
+    "flux-coke",
+    "flux-schizo",
+    "flux-pro",
+    "flux-dev",
+    "turbo",
+    "midjourney",
+    "dalle",
+    "any-dark"
+]
 
 # Weather API (using free wttr.in service)
 WEATHER_API_URL = "https://wttr.in/?format=%C+%t"
@@ -64,6 +78,88 @@ COLORS = {
     "disabled": "#475569",          # Disabled State
 }
 
+# Mode Themes - Dynamic UI Tinting
+MODE_THEMES = {
+    "time_based": {
+        "name": "Time of Day",
+        "accent": "#f59e0b",  # Amber
+        "gradient": ["#f59e0b", "#d97706"],
+        "desc": "Generates wallpapers matching your local time and sun position."
+    },
+    "weather_based": {
+        "name": "Weather Reactive",
+        "accent": "#0ea5e9",  # Sky Blue
+        "gradient": ["#0ea5e9", "#0284c7"],
+        "desc": "Reacts to your local weather: sunny, rainy, or stormy visuals."
+    },
+    "music_based": {
+        "name": "Music Reactive",
+        "accent": "#ec4899",  # Pink
+        "gradient": ["#ec4899", "#db2777"],
+        "desc": "Visualizes your currently playing music into abstract art."
+    },
+    "gaming": {
+        "name": "Game Sense",
+        "accent": "#10b981",  # Emerald
+        "gradient": ["#10b981", "#059669"],
+        "desc": "Detects running games and adapts themes to match the genre."
+    },
+    "aesthetic": {
+        "name": "Aesthetic Vibe",
+        "accent": "#8b5cf6",  # Purple
+        "gradient": ["#8b5cf6", "#7c3aed"],
+        "desc": "Trendy vaporwave, synthwave, and modern aesthetic art styles."
+    },
+    "nature": {
+        "name": "Nature Focus",
+        "accent": "#22c55e",  # Green
+        "gradient": ["#22c55e", "#16a34a"],
+        "desc": "Serene landscapes, forests, and natural wonders of the world."
+    },
+    "space": {
+        "name": "Space & Cosmos",
+        "accent": "#6366f1",  # Indigo
+        "gradient": ["#6366f1", "#4f46e5"],
+        "desc": "Cosmic scenes, nebulas, and the deep mysteries of the universe."
+    },
+    "abstract": {
+        "name": "Abstract Art",
+        "accent": "#f43f5e",  # Rose
+        "gradient": ["#f43f5e", "#e11d48"],
+        "desc": "Digital patterns, shapes, and complex abstract compositions."
+    },
+    "cyberpunk": {
+        "name": "Cyberpunk",
+        "accent": "#06b6d4",  # Cyan
+        "gradient": ["#06b6d4", "#0891b2"],
+        "desc": "Neon-lit futuristic cityscapes and high-tech dystopias."
+    },
+    "fantasy": {
+        "name": "Fantasy World",
+        "accent": "#a855f7",  # Purple-Pink
+        "gradient": ["#a855f7", "#9333ea"],
+        "desc": "Magical worlds, mythical creatures, and epic fantasy scenes."
+    },
+    "manual": {
+        "name": "Manual Mode",
+        "accent": "#64748b",  # Slate
+        "gradient": ["#64748b", "#475569"],
+        "desc": "Your creative vision. Type anything and let PolliPaper build it."
+    }
+}
+
+# Prompt Placeholders
+PROMPT_EXAMPLES = [
+    "ethereal forest at sunset with floating bioluminescent spores",
+    "cyberpunk street market in the rain with neon reflections",
+    "minimalist geometric abstract art with gold and marble textures",
+    "majestic nebula with swirling cosmic dust and distant stars",
+    "vaporwave sunset with palm trees and retro grid horizon",
+    "hyper-realistic mountain landscape with clear turquoise lake",
+    "fantasy castle floating among the clouds at dawn",
+    "macro photography of a mechanical butterfly with clockwork wings"
+]
+
 # Wallpaper Settings
 # Flux model supports flexible resolutions
 DEFAULT_RESOLUTION = "1920x1080"
@@ -75,19 +171,8 @@ SUPPORTED_RESOLUTIONS = [
     "1280x720",   # HD
 ]
 
-# Generation Modes
-MODES = {
-    "manual": "Manual",
-    "time_based": "Time of Day",
-    "weather_based": "Weather Reactive",
-    "music_based": "Music Reactive",
-    "aesthetic": "Aesthetic Vibe",
-    "nature": "Nature Focus",
-    "space": "Space & Cosmos",
-    "abstract": "Abstract Art",
-    "cyberpunk": "Cyberpunk",
-    "fantasy": "Fantasy World"
-}
+# Generation Settings
+ENHANCE_DEFAULT = True
 
 # Time of Day Prompts
 TIME_PROMPTS = {

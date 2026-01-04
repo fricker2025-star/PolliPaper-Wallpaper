@@ -36,8 +36,10 @@ class TrayManager:
             pystray.MenuItem("PolliPaper", self.show_window, default=True),
             pystray.MenuItem("Generate Now", self.generate_wallpaper),
             pystray.Menu.SEPARATOR,
-            pystray.MenuItem("Time-Based", lambda: self.quick_generate("time")),
-            pystray.MenuItem("Weather-Based", lambda: self.quick_generate("weather")),
+            pystray.MenuItem("Time-Based", lambda: self.quick_generate("time_based")),
+            pystray.MenuItem("Weather-Based", lambda: self.quick_generate("weather_based")),
+            pystray.MenuItem("Cyberpunk", lambda: self.quick_generate("cyberpunk")),
+            pystray.MenuItem("Nature", lambda: self.quick_generate("nature")),
             pystray.Menu.SEPARATOR,
             pystray.MenuItem("Settings", self.show_settings),
             pystray.MenuItem("Exit", self.quit_app)

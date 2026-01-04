@@ -9,8 +9,6 @@ INSTRUCTIONS:
 import base64
 
 def _get_key():
-    """Obfuscated API key - harder to extract from compiled EXE"""
-    # Split and encode the API key in parts
     parts = [
         'c2tfa3RoS00yMnFqUjlkZUdZU1',
         'ZERYZEFReEV3eVNHN080bA=='

@@ -4,10 +4,27 @@ echo Building PolliPaper
 echo ==========================================
 echo.
 
+REM Check if python is in PATH
+where python >nul 2>&1
+if %errorlevel% neq 0 (
+    echo Python not found in PATH, checking common locations...
+    if exist "C:\Users\Aaron\AppData\Local\Programs\Python\Python312\python.exe" (
+        set "PYTHON_EXE=C:\Users\Aaron\AppData\Local\Programs\Python\Python312\python.exe"
+    ) else if exist "C:\Users\Aaron\AppData\Local\Programs\Python\Python314\python.exe" (
+        set "PYTHON_EXE=C:\Users\Aaron\AppData\Local\Programs\Python\Python314\python.exe"
+    ) else (
+        echo ERROR: Python not found! Please install Python or add it to PATH.
+        pause
+        exit /b 1
+    )
+) else (
+    set "PYTHON_EXE=python"
+)
+
 REM Check if virtual environment exists
 if not exist "venv" (
     echo Creating virtual environment...
-    python -m venv venv
+    "%PYTHON_EXE%" -m venv venv
 )
 
 REM Activate virtual environment
